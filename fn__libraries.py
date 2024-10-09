@@ -2,6 +2,7 @@ import os, re, tempfile, requests
 from io import StringIO
 from typing import List, Tuple
 
+import time
 import pandas as pd, numpy as np
 from math import ceil, floor
 from datetime import datetime, timedelta
@@ -653,7 +654,6 @@ def absrd_process_stat_file(file_path):
 
 
 
-import time
 
 
 
