@@ -59,58 +59,67 @@ dict_titles = {
 
 
 chart_cols = st.columns(len(stat_names))
-for col, stat_name in zip(chart_cols, stat_names):
+for col, stat_name, epw_file in zip(chart_cols, stat_names, epw_files):
     with col:
         # st.write(epw_col)
-        st.markdown(f"<h6 style='text-align: center; color: black;'>{stat_name}</h6>", unsafe_allow_html=True)
+        st.markdown(f"<h5 style='text-align: center; color: black;'>{stat_name}</h5>", unsafe_allow_html=True)
+        
         stat_file_path = next((item["stat_file_path"] for item in epw_files_list if item["stat_file_name"] == stat_name), None)
         # st.caption(stat_file_path)
+        # custom_hr()
 
         dry_bulb_df_final, summary_dict = absrd_process_stat_file(file_path=stat_file_path)
 
+        # Create two columns
+        col1, col2 = st.columns(2)
+
+        # Display metrics in the columns
+        for idx, (key, value) in enumerate(summary_dict.items()):
+            label = key.replace("Dry Bulb Temperature", "DBT")
+            label = key
+            help_info = "Dry Bulb Temperature"
+
+            # Place first metric in the first column, second in the second column
+            if idx % 2 == 0:
+                col1.metric(label=label, value=value)
+            else:
+                col2.metric(label=label, value=value)
 
 
 
-        col_table_1, col_table_2 = st.columns([20,1])
-        with col_table_1:
-            # st.write("\nSummary Dictionary:")
-            st.write(summary_dict)
 
 
-        with col_table_1:
+        # Loop through the slicing ranges and create sub-DataFrames
+        i=0
+        for start, end in slicing_ranges:
 
-            # Loop through the slicing ranges and create sub-DataFrames
-            i=0
-            for start, end in slicing_ranges:
-
-                custom_hr()
-                st.markdown(f'##### {dict_titles[i]}')
-
-                # Slice the DataFrame based on the index range
-                sub_df = dry_bulb_df_final.iloc[start:end]
-
-                if i>0:
-                    sub_df__styled = absrd_style_df_streamlit(df=sub_df, range_min_max=[-10,40], colormap='RdBu_r')
-                    st.dataframe(sub_df__styled, use_container_width=True)
-                    if i==2:
-                        df_daytime = sub_df
-                    if i==3:
-                        df_nighttime = sub_df
-
-                else:
-                    # Reset the index to convert the index into a regular column
-                    df_reset = sub_df.reset_index()
-
-                    # Apply the custom row styling function using .apply with axis=1 for rows
-                    styled_df = df_reset.style.apply(lambda x: row_style(df_reset,x.name), axis=1)            
-                    st.dataframe(styled_df, use_container_width=True)
-
-                i+=1
-
-
-        with col_table_1:
             custom_hr()
-            st.markdown(f'##### Daytime and NightTime Temperatures')
+            st.markdown(f'##### {dict_titles[i]}')
 
-            fig_daytime_nighttime = absrd_daytime_nighttime_scatter(df_daytime, df_nighttime)
-            st.plotly_chart(fig_daytime_nighttime)
+            # Slice the DataFrame based on the index range
+            sub_df = dry_bulb_df_final.iloc[start:end]
+
+            if i>0:
+                sub_df__styled = absrd_style_df_streamlit(df=sub_df, range_min_max=[-10,40], colormap='RdBu_r')
+                st.dataframe(sub_df__styled, use_container_width=True)
+                if i==2:
+                    df_daytime = sub_df
+                if i==3:
+                    df_nighttime = sub_df
+
+            else:
+                # Reset the index to convert the index into a regular column
+                df_reset = sub_df.reset_index()
+
+                # Apply the custom row styling function using .apply with axis=1 for rows
+                styled_df = df_reset.style.apply(lambda x: row_style(df_reset,x.name), axis=1)            
+                st.dataframe(styled_df, use_container_width=True)
+
+            i+=1
+
+
+        custom_hr()
+        st.markdown(f'##### Daytime and NightTime Temperatures')
+
+        fig_daytime_nighttime = absrd_daytime_nighttime_scatter(df_daytime, df_nighttime)
+        st.plotly_chart(fig_daytime_nighttime)

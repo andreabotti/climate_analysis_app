@@ -257,16 +257,19 @@ def fetch_pvgis_hourly_data(lat, lon, startyear, endyear, peakpower=1, loss=14, 
 
 
 
-
-
 # Function to fetch PV production data
-def fetch_pv_production_data(lat, lon, peakpower=1, loss=14):
-    api_url = "https://re.jrc.ec.europa.eu/api/PVcalc"
+def fetch_pv_production_data(lat, lon, peakpower, loss, azimuth, tilt):
+    api_url = "https://re.jrc.ec.europa.eu/api/v5_2/PVcalc"
+    # api_url = "https://re.jrc.ec.europa.eu/api/PVcalc"
     params = {
-        'lat': lat,
-        'lon': lon,
-        'peakpower': peakpower,  # kWp
+        'lat' : lat,
+        'lon' : lon,
+        'peakpower' : peakpower,  # kWp
+        'pvtechchoice' : 'crystSi',
         'loss': loss,            # System losses in %
+        'fixed' : 1,
+        'angle': tilt,           # Tilt angle of the PV panel
+        'aspect': azimuth,       # Azimuth angle of the PV panel
         'outputformat': 'json',
     }
     
@@ -280,6 +283,8 @@ def fetch_pv_production_data(lat, lon, peakpower=1, loss=14):
         st.error(f"Request error occurred: {req_err}")
     
     return None
+
+
 
 
 
@@ -356,7 +361,7 @@ def extract_meta_monthly_variable_info(pv_production_data):
 
 
 
-def plot_pv_monthly_comparison_subplots(df_plot, range_min_em, range_max_em, range_min_him, range_max_him, margin):
+def plot_pv_monthly_comparison_subplots(df_plot, tilt, azimuth, range_min_em, range_max_em, range_min_him, range_max_him, margin):
     """
     Plots two subplots side-by-side using Plotly for E_m and H(i)_m from the given monthly PV DataFrame.
     Allows the user to specify y-axis ranges for both metrics separately and set custom plot margins.
@@ -377,8 +382,8 @@ def plot_pv_monthly_comparison_subplots(df_plot, range_min_em, range_max_em, ran
         if 'E_m' not in df_plot.columns or 'H(i)_m' not in df_plot.columns:
             raise ValueError("The DataFrame must contain 'E_m' and 'H(i)_m' columns.")
 
-        title_Em = 'Avg. energy production<br>[kWh/mo]'
-        title_Him = 'Avg. sum of global irradiation<br>[kWh/m²/mo]'
+        title_Em = f'Avg. energy production [kWh/mo]<br>Tilt:<b>{tilt}</b> - Azimuth:<b>{azimuth}</b>'
+        title_Him = f'Avg. sum of global irradiation [kWh/m²/mo]<br>Tilt:<b>{tilt}</b> - Azimuth:<b>{azimuth}</b>'
 
         # Create a subplot with 1 row and 2 columns
         fig = make_subplots(
@@ -393,7 +398,7 @@ def plot_pv_monthly_comparison_subplots(df_plot, range_min_em, range_max_em, ran
                 x=df_plot.index,
                 y=df_plot['E_m'],
                 name='E_m (kWh/mo)',
-                marker_color='skyblue'
+                marker_color='#3880C5'
             ),
             row=1, col=2
         )
@@ -413,10 +418,13 @@ def plot_pv_monthly_comparison_subplots(df_plot, range_min_em, range_max_em, ran
         fig.update_layout(
             # title='Monthly PV Production Comparison: E_m and H(i)_m',
             showlegend=False,  # Hide legend as each subplot has its own axis title
-            height=500,        # Adjust the height of the chart
+            height=450,        # Adjust the height of the chart
             width=1000,         # Adjust the width of the chart
             margin=margin if margin else dict(l=40, r=40, t=40, b=40),  # Apply user-defined margins or default
         )
+        # Update annotations (subplot titles)
+        fig.update_annotations(font=dict(size=18, color='black'))  # Set the font size of all subplot titles to 20
+
 
         # Set custom y-axis ranges for each subplot
         fig.update_yaxes(
@@ -638,3 +646,42 @@ def absrd_process_stat_file(file_path):
 
 
     return dry_bulb_df_final, summary_dict
+
+
+
+
+
+
+
+import time
+
+
+
+# Function to iterate through multiple values of azimuth and tilt angle
+def iterate_pv_production(lat, lon, azimuth_values, tilt_values, peakpower, loss, pause_duration):
+    results = []  # To store results for each azimuth and tilt angle combination
+
+    # Iterate through each combination of azimuth and tilt angle
+    for azimuth in azimuth_values:
+        for tilt in tilt_values:
+            result = fetch_pv_production_data(lat, lon, peakpower, loss, azimuth, tilt)
+            if result and "outputs" in result and "totals" in result["outputs"]:
+                # Extract relevant data from the result
+                totals = result["outputs"]["totals"]["fixed"]
+                results.append({
+                    'azimuth': azimuth,
+                    'tilt': tilt,
+                    'daily_energy': totals.get('E_d', None),
+                    'monthly_energy': totals.get('E_m', None),
+                    'yearly_energy': totals.get('E_y', None),
+                    'daily_irr': totals.get('H(i)_d', None),
+                    'monthly_irr': totals.get('H(i)_m', None),
+                    'yearly_irr': totals.get('H(i)_y', None),
+                    'total_loss': totals.get('l_total', None)
+                })
+            
+            # Pause between API calls
+            time.sleep(pause_duration)
+    
+    return results
+

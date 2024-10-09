@@ -35,6 +35,11 @@ if 'epw_names' not in st.session_state:  # Initialize epw_names to prevent KeyEr
     st.session_state['epw_names'] = []  # Store EPW objects corresponding to the selected/uploaded files
 
 
+st.sidebar.caption("""
+Visit: [epwmap](https://www.ladybug.tools/epwmap/) or [climate.onebuilding](https://climate.onebuilding.org/) to download EPW weather data             
+""")
+
+
 # Create radio button for EPW file input selection and store the choice in session state
 st.session_state['epw_input_choice'] = st.sidebar.radio(
     "Choose EPW input method:", 

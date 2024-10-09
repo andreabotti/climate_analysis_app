@@ -20,8 +20,8 @@ create_page_header()
 ####################################################################################
 # LOAD DATA INTO SESSION STATE
 epw_files_list = st.session_state['epw_files_list']
-epw_names = [item['epw_object'] for item in epw_files_list]
-epw_files = [item['epw_file_name'] for item in epw_files_list]
+epw_names = [item['epw_file_name'] for item in epw_files_list]
+epw_files = [item['epw_object'] for item in epw_files_list]
 st.session_state['epw_names'] = epw_names
 st.session_state['epw_files'] = epw_files
 
@@ -87,6 +87,8 @@ if end_year < start_year:
     st.sidebar.error("End Year must be greater than or equal to Start Year.")
 
 
+
+
 ####################################################################################
 # Button to trigger API call
 if st.sidebar.button("Fetch PVGIS Data"):
@@ -107,8 +109,8 @@ if st.sidebar.button("Fetch PVGIS Data"):
             for epw_name, epw_file in zip(epw_names, epw_files):
                 # Fetch hourly data
                 hourly_data = fetch_pvgis_hourly_data(
-                    lat=epw_name.location.latitude,
-                    lon=epw_name.location.longitude,
+                    lat=epw_file.location.latitude,
+                    lon=epw_file.location.longitude,
                     startyear=start_year,
                     endyear=end_year,
                     peakpower=peak_power,
@@ -119,10 +121,12 @@ if st.sidebar.button("Fetch PVGIS Data"):
 
                 # Fetch PV production data
                 pv_production_data = fetch_pv_production_data(
-                    lat=epw_name.location.latitude,
-                    lon=epw_name.location.longitude,
+                    lat=epw_file.location.latitude,
+                    lon=epw_file.location.longitude,
                     peakpower=peak_power,
-                    loss=system_loss
+                    loss=system_loss,
+                    tilt=tilt_angle,
+                    azimuth=azimuth,
                 )
 
                 hourly_data_dict[epw_file] = hourly_data
@@ -152,20 +156,27 @@ if st.sidebar.button("Fetch PVGIS Data"):
         with tabs[0]:
             st.markdown(f'##### PVGIS Data Visualization - Charts')
             chart_cols = st.columns(len(epw_names))
-            for col, epw_file in zip(chart_cols, epw_files):
+            for col, epw_name, epw_file in zip(chart_cols, epw_names, epw_files):
                 with col:
-                    st.markdown(f"<h6 style='text-align: center; color: black;'>{epw_file}</h6>", unsafe_allow_html=True)
+
+                    lat = round(epw_file.location.latitude,3); lon = round(epw_file.location.longitude,3)
+                    station = epw_file._location.city
+                    st.markdown(
+                        f"<h5 style='text-align: center; color: black;'>{station}  lat: {lat} - lon: {lon}</h5>",
+                        unsafe_allow_html=True,
+                        )
 
                     # Define custom y-axis ranges for both subplots
-                    range_min_em, range_max_em = 0, 230
-                    range_min_him, range_max_him = 0, 230
+                    range_min_em, range_max_em = 0, 265
+                    range_min_him, range_max_him = 0, 265
 
                     # Define custom margins
-                    custom_margins = dict(l=20, r=20, t=50, b=20)
+                    custom_margins = dict(l=20, r=20, t=60, b=20)
 
                     # Plot the subplots
                     fig_plotly = plot_pv_monthly_comparison_subplots(
-                        df_pv_monthly_dict[epw_file], range_min_em, range_max_em, range_min_him, range_max_him, margin=custom_margins
+                        df_pv_monthly_dict[epw_file], tilt_angle, azimuth, 
+                        range_min_em, range_max_em, range_min_him, range_max_him, margin=custom_margins
                     )
                     st.plotly_chart(fig_plotly, use_container_width=True)
 
@@ -175,7 +186,6 @@ if st.sidebar.button("Fetch PVGIS Data"):
             chart_cols = st.columns(len(epw_files))  # Create columns for each EPW file
             for col, epw_file in zip(chart_cols, epw_files):
                 with col:
-                    # st.markdown(f"### {epw_file}")
                     
                     # Display Monthly DataFrame
                     if not df_pv_monthly_dict[epw_file].empty:
@@ -206,3 +216,104 @@ if st.sidebar.button("Fetch PVGIS Data"):
 
                     with st.expander(f"PV Production Data (Raw JSON) for {epw_file}"):
                         st.json(pv_production_data_dict[epw_file])
+
+
+
+
+####################################################################################
+# Button to trigger API call
+
+azimuth_values = range(-180, 181, 10)  # Azimuth from -180 to 180 with steps of 10
+tilt_values = range(0, 91, 5)          # Tilt angle from 0 to 90 with steps of 5
+
+azimuth_values = range(-180, 181, 30)  # Azimuth from -180 to 180 with steps of 10
+tilt_values = range(0, 91, 10)          # Tilt angle from 0 to 90 with steps of 5
+
+
+with st.sidebar:
+    custom_hr()
+
+if st.sidebar.button("Fetch PVGIS Data for multiple values of tilt and azimuth (calc. time > 2 mins)"):
+
+    with st.spinner('Fetching data from PVGIS API...'):
+
+        chart_cols = st.columns(len(epw_names))
+        for col, epw_name, epw_file in zip(chart_cols, epw_names, epw_files):
+            with col:
+
+                lat = round(epw_file.location.latitude,3); lon = round(epw_file.location.longitude,3)
+                station = epw_file._location.city
+                st.markdown(
+                    f"<h5 style='text-align: center; color: black;'>{station}  lat: {lat} - lon: {lon}</h5>",
+                    unsafe_allow_html=True,
+                    )
+
+                # Run the iteration function and retrieve results
+                data = iterate_pv_production(
+                    lat= epw_file.location.latitude, lon=epw_file.location.longitude,
+                    peakpower=peak_power, loss=system_loss,
+                    azimuth_values=azimuth_values, tilt_values=tilt_values,
+                    pause_duration=0.2,
+                    )
+
+                if data:
+                    df = pd.DataFrame(data)
+                    # col.write(df)                
+
+                output_cols = df.columns.drop( ['azimuth', 'tilt','daily_energy', 'daily_irr', 'total_loss'] )
+                # st.write(output_cols)
+
+                for oc in output_cols:
+                    df_filtered = df[['azimuth', 'tilt', oc]]
+
+                    # Pivot the DataFrame to create a matrix
+                    energy_matrix = df_filtered.pivot(index='tilt', columns='azimuth', values=oc).round(0)
+
+                    # Define the dictionary with the required keys and values
+                    metrics_dict = {
+                        'monthly_energy': {'metric': '[kWh/mo]', 'range': [0, 140], 'colormap': 'BuGn'},
+                        'yearly_energy': {'metric': '[kWh/yr]', 'range': [0, 1500], 'colormap': 'BuGn'},
+                        'monthly_irr': {'metric': '[kWh/m²/mo]', 'range': [0, 200], 'colormap': 'Oranges'},
+                        'yearly_irr': {'metric': '[kWh/m²/yr]', 'range': [0, 2000], 'colormap': 'Oranges'}
+                    }
+
+                    # Function to return details based on the output_var
+                    def get_metric_details(output_var):
+                        # Check if the output_var exists in the dictionary
+                        if output_var in metrics_dict:
+                            return metrics_dict[output_var]
+                        else:
+                            return f"'{output_var}' is not a valid key. Please choose a valid output_var."
+                    
+                    var_metric = get_metric_details(oc)['metric']
+
+                    st.write('')
+                    st.markdown(f'##### Output values for {oc} - {var_metric}')
+
+                    # Display the transformed matrix
+                    if oc == 'monthly_energy':
+                        energy_matrix = energy_matrix.applymap(lambda x: f"{x:.0f}")
+                        energy_matrix__styled = absrd_style_df_streamlit(df=energy_matrix, range_min_max=[0,140], colormap='BuGn')
+                        st.dataframe(energy_matrix__styled, use_container_width=True)
+
+                    if oc == 'yearly_energy':
+                        energy_matrix = energy_matrix.applymap(lambda x: f"{x:.0f}")
+                        energy_matrix__styled = absrd_style_df_streamlit(df=energy_matrix, range_min_max=[0,1500], colormap='BuGn')
+                        st.dataframe(energy_matrix__styled, use_container_width=True)
+
+                    if oc == 'monthly_irr':
+                        energy_matrix = energy_matrix.applymap(lambda x: f"{x:.0f}")
+                        energy_matrix__styled = absrd_style_df_streamlit(df=energy_matrix, range_min_max=[0,200], colormap='Oranges')
+                        st.dataframe(energy_matrix__styled, use_container_width=True)
+
+                    if oc == 'yearly_irr':
+                        energy_matrix = energy_matrix.applymap(lambda x: f"{x:.0f}")
+                        energy_matrix__styled = absrd_style_df_streamlit(df=energy_matrix, range_min_max=[0,2000], colormap='Oranges')
+                        st.dataframe(energy_matrix__styled, use_container_width=True)
+
+
+                custom_hr()
+                
+                with st.expander('Raw JSON data'):
+                    st.write(data)
+                    

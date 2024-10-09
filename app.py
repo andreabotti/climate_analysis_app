@@ -42,7 +42,12 @@ st.markdown("""
 - _4_PV_ProductionEstimate_: visit this page to produce PV production estimates using the PVGIS API
 """, unsafe_allow_html=True)
 
-
+custom_hr()
+st.markdown("""
+You can find a wide range of EPW weather data by visiting:
+- https://www.ladybug.tools/epwmap/
+- https://climate.onebuilding.org/            
+""")
 
 ####################################################################################
 # Step 1: Inject the CSS for the Google Font you want to use
