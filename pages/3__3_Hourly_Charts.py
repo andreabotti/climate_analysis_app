@@ -98,9 +98,9 @@ for col, epw_col, epw_name in zip(chart_cols, epw_files, epw_names):
             data_start_month, data_start_day, data_start_hour,
             data_end_month, data_end_day, data_end_hour,
             )
-        data_col = data_col.filter_by_analysis_period(lb_ap)
-        data_values = data_col.values  # Extracts the actual data values (temperature, radiation, etc.)
-        data_dates = data_col.datetimes  # Extracts corresponding datetime objects for each hourly reading
+        col = col.filter_by_analysis_period(lb_ap)
+        data_values = col.values  # Extracts the actual data values (temperature, radiation, etc.)
+        data_dates = col.datetimes  # Extracts corresponding datetime objects for each hourly reading
 
         all_values.append( max(data_values) )
         all_values.append( min(data_values) )

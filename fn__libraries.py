@@ -39,6 +39,8 @@ from ladybug_charts.utils import Strategy
 
 
 
+
+
 colorsets = {
     'original': Colorset.original(),
     'nuanced': Colorset.nuanced(),
