@@ -685,3 +685,31 @@ def iterate_pv_production(lat, lon, azimuth_values, tilt_values, peakpower, loss
     
     return results
 
+
+
+
+
+
+import math
+
+def define_yaxis_range(var_min, var_max):
+    # Calculate range difference
+    range_diff = var_max - var_min
+    
+    # Determine the rounding base based on the range difference
+    if range_diff <= 10:
+        round_base = 10
+    elif range_diff <= 100:
+        round_base = 10
+    elif range_diff <= 500:
+        round_base = 50
+    elif range_diff <= 1000:
+        round_base = 100
+    else:
+        round_base = 1000
+    
+    # Apply rounding to nearest base
+    rounded_min = math.floor(var_min / round_base) * round_base
+    rounded_max = math.ceil(var_max / round_base) * round_base
+    
+    return rounded_min, rounded_max

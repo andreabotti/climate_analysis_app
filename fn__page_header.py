@@ -26,7 +26,7 @@ def create_page_header():
     col_logo, col_title, col_info = st.columns([1,4,5])
 
     with col_logo:
-        st.image('./img/logo_small.png', use_column_width=True)
+        st.image('./img/logo_small.png', use_container_width=True)
 
     with col_title:
         st.markdown("# Climate Analysis App ")

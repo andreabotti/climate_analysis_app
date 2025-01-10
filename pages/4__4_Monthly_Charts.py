@@ -95,141 +95,15 @@ with st.sidebar:
 ####################################################################################
 # Tabs for Hourly and Daily Charts
 tabs = st.tabs([
-    "Hourly - **Line Chart**",
-    "Hourly - **Heatmap**",
-    "Hourly - **Avg. Day**",
     "Monthly - **Stacked Columns**",
     "Monthly - **METRICS**",
     ])
 
 
 
+
 ########################################
-# Hourly Chart - LINE
 with tabs[0]:
-
-    st.markdown(f'##### Line chart with hourly data')
-    st.write('')
-
-    chart_cols = st.columns(len(epw_names))
-    for col, epw_col, epw_name in zip(chart_cols, epw_files, epw_names):
-        with col:
-            # st.write(epw_col)
-            st.markdown(f"<h6 style='text-align: center; color: black;'>{epw_name}</h6>", unsafe_allow_html=True)
-            data_col = epw_col._get_data_by_field(fields[hourly_selected])
-
-            data_figure = get_hourly_line_chart_figure(
-                data=data_col,
-                switch=True,
-                global_colorset=global_colorset,
-                )
-
-            if isinstance(data_figure, str):
-                col.error(data_figure)
-            else:
-                col.plotly_chart(data_figure, use_container_width=True, config=get_figure_config(f'{data_col.header.data_type}'))
-
-
-
-
-########################################
-# Hourly Charts - HEATMAP
-with tabs[1]:
-
-    st.markdown(f'##### Heatmap chart with hourly data')
-    st.write('')
-
-    chart_cols = st.columns(len(epw_names))
-    for col, epw_col, epw_name in zip(chart_cols, epw_files, epw_names):
-        with col:
-            # st.write(epw_col)
-            st.markdown(f"<h6 style='text-align: center; color: black;'>{epw_name}</h6>", unsafe_allow_html=True)
-            data_col = epw_col._get_data_by_field(fields[hourly_selected])
-            data_figure = get_hourly_data_figure(
-                data_col, global_colorset, data_conditional_statement,
-                data_min, data_max, data_start_month, data_start_day,
-                data_start_hour, data_end_month, data_end_day, data_end_hour
-            )
-            if isinstance(data_figure, str):
-                col.error(data_figure)
-            else:
-                col.plotly_chart(data_figure, use_container_width=True, config=get_figure_config(f'{data_col.header.data_type}'))
-
-
-
-
-
-########################################
-with tabs[2]:
-    # Create sub-columns for selection widgets
-    sub_col_11, spacing, sub_col_12, spacing = st.columns([6, 1, 3, 1])
-
-    # Multi-select box for selecting EPW files to plot
-    with sub_col_11:
-        selected_files = st.multiselect("Select files to plot", options=epw_names, default=epw_names)
-
-    # Radio button to choose layout (horizontal or vertical)
-    with sub_col_12:
-        layout = st.radio("Select plotting layout", options=["Horizontal", "Vertical"], horizontal=True)
-
-
-    st.markdown('##### Scatter chart with hourly data & Line chart with average day')
-
-    # Display charts based on selected layout
-    if layout == "Horizontal":
-        # Create one row with multiple columns for each selected file
-        chart_cols = st.columns(len(selected_files))
-        
-        # Loop through each selected file and display the chart in its respective column
-        for col, epw_col, epw_name in zip(chart_cols, epw_files, epw_names):
-            if epw_name in selected_files:
-                with col:
-                    # Add the EPW file name as a header
-                    st.markdown(f"<h6 style='text-align: center; color: black;'>{epw_name}</h6>", unsafe_allow_html=True)
-                    
-                    # Extract and process data from EPW collection
-                    data_col = epw_col._get_data_by_field(fields[hourly_selected])
-
-                    # Apply the analysis period to the data
-                    plot_data = absrd_apply_analysis_period(data_col, plot_analysis_period)
-                    
-                    # Create the daily profile figure
-                    fig_daily = absrd_avg_daily_profile(
-                        plot_data=data_col, global_colorset=global_colorset, plot_analysis_period=plot_analysis_period
-                    )
-                    
-                    # Display the daily profile figure for the current EPW file
-                    st.plotly_chart(fig_daily)
-
-    else:  # Vertical layout
-        # Loop through each selected file and display the chart vertically
-        for epw_col, epw_name in zip(epw_files, epw_names):
-            if epw_name in selected_files:
-                # Add a separator and the EPW file name as a header
-                st.markdown("---")
-                st.markdown(f"<h6 style='text-align: center; color: black;'>{epw_name}</h6>", unsafe_allow_html=True)
-                
-                # Extract and process data from EPW collection
-                data_col = epw_col._get_data_by_field(fields[hourly_selected])
-                
-                # Apply the analysis period to the data
-                plot_data = absrd_apply_analysis_period(data_col, plot_analysis_period)
-                
-                # Create the daily profile figure
-                fig_daily = absrd_avg_daily_profile(
-                    plot_data=data_col, global_colorset=global_colorset, plot_analysis_period=plot_analysis_period
-                )
-                
-                # Display the daily profile figure for the current EPW file
-                st.plotly_chart(fig_daily)
-
-
-
-
-
-
-########################################
-with tabs[3]:
 
     st.markdown('##### Stacked bars with binned data')
     st.write('')
@@ -270,8 +144,9 @@ with tabs[3]:
 
 
 
+
 ######################################## METRICS DISPLAY
-with tabs[4]:
+with tabs[1]:
     st.markdown('##### Metrics Summary')
     thresholds = {}  # Define a threshold dictionary to store user-defined thresholds for each EPW file
     col_number_input, col_all_metrics = st.columns([1, 3])

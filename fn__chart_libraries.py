@@ -816,4 +816,75 @@ def get_psy_chart_figure(epw: EPW, global_colorset: str, selected_strategy: str,
 
 
 
+def absrd__line_chart_daily__range( hourly_data, show_legend, legend_position, margins, fixed_y_range, var_name, var_unit ):
 
+    """
+    Resamples hourly data to daily values and plots temperature range with daily min, max, and average values.
+    
+    Parameters:
+        hourly_data (pd.DataFrame): DataFrame with hourly 'temperature_values' and DateTime index.
+        show_legend (bool): Whether to display the legend.
+        legend_position (str): Position of the legend. Options: "top left", "top right", "bottom left", "bottom right".
+        margins (tuple): Margins for the layout in the format (top, right, bottom, left).
+    """
+ 
+    # Resample hourly data to daily min, max, and average
+    daily_data = hourly_data.resample('D').agg(
+        min_values=('values', 'min'),
+        max_values=('values', 'max'),
+        average_values=('values', 'mean')
+    ).reset_index()
+
+    # Create traces for the values range and average
+    trace1 = go.Scatter(
+        x=daily_data["datetime"],
+        y=daily_data["min_values"],
+        mode='lines',
+        line=dict(width=0, color='rgb(0, 0, 0)'),
+        showlegend=False,
+    )
+    trace2 = go.Scatter(
+        x=daily_data["datetime"],
+        y=daily_data["max_values"],
+        fill='tonexty',
+        mode='lines',
+        fillcolor='rgba(112, 115, 155, 0.15)',
+        line=dict(width=0),
+        name="Daily Range",
+    )
+    trace3 = go.Scatter(
+        x=daily_data["datetime"],
+        y=daily_data["average_values"],
+        mode='lines',
+        line=dict(color='#0a1585', width=2),
+        name="Daily Average",
+    )
+
+    # Combine traces
+    traces = [trace1, trace2, trace3]
+
+    # Define legend position mapping
+    legend_positions = {
+        "top left": dict(x=0, y=1),
+        "top right": dict(x=1, y=1),
+        "bottom left": dict(x=0, y=0),
+        "bottom right": dict(x=1, y=0)
+    }
+
+    # Set up the layout with custom margins and legend settings
+    layout = go.Layout(
+        title=f"{var_name} - Min, Max, and Average",
+        xaxis=dict(title="Date", tickformat="%b"),
+        yaxis=dict(title=f"{var_name} [{var_unit}]", range=fixed_y_range if fixed_y_range else None),
+        showlegend=show_legend,
+        legend=dict(
+            x=legend_positions[legend_position]["x"],
+            y=legend_positions[legend_position]["y"]
+        ),
+        margin=dict(t=margins[0], r=margins[1], b=margins[2], l=margins[3])
+    )
+
+    # Create figure
+    fig = go.Figure(data=traces, layout=layout)
+
+    return fig
