@@ -211,7 +211,7 @@ if epw_names:
                     location = pd.DataFrame([np.array([epw_name.location.latitude, epw_name.location.longitude], dtype=np.float64)], columns=['latitude', 'longitude'])
 
                     # Uncomment below line if `absrd__epw_location_map` is a valid function for generating maps
-                    map_plot = absrd__epw_location_map(data=location, col_lat='latitude', col_lon='longitude', zoom_level=8, chart_height=100, chart_width=100)
+                    map_plot = absrd__epw_location_map(data=location, col_lat='latitude', col_lon='longitude', zoom_level=10, chart_height=100, chart_width=100)
 else:
     st.markdown('##### No EPW files have been processed or selected.')
 

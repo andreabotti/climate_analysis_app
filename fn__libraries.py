@@ -144,7 +144,7 @@ def absrd__epw_location_map(data, col_lat, col_lon, zoom_level, chart_height, ch
         data,
         # get_position='[lon, lat]',
         get_position=f'[{col_lon}, {col_lat}]',
-        get_radius=100,
+        get_radius=500,
         get_color='[255, 0, 0, 160]',
         pickable=True,
     )
