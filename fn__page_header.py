@@ -30,7 +30,7 @@ def create_page_header():
 
     with col_title:
         st.markdown("# Climate Analysis App ")
-        st.markdown("##### Exploration of weather data in EPW format")
+        st.markdown("###### Exploration of weather data in EPW format")
         # st.caption('Developed by AB.S.RD - https://absrd.xyz/')
 
     with col_info:
@@ -44,10 +44,6 @@ def create_page_header():
                 #  '' [support forum](https://discourse.pollination.cloud/c/apps/11) |'
         )
 
-        # st.markdown('**Info**')
-        # st.markdown(
-        #     body='**Info** [ This app is developed using existing `ladybug-charts` library modules and charts ]  \t'
-        #         '| [source code](https://github.com/pollination-apps/weather-report) | [support forum](https://discourse.pollination.cloud/c/apps/11) |'
-        # )
 
+    # st.divider()
     custom_hr()

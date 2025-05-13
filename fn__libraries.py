@@ -5,7 +5,7 @@ from typing import List, Tuple
 import time
 import pandas as pd, numpy as np
 from math import ceil, floor
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 
 
 import plotly.express as px
@@ -102,18 +102,115 @@ def rgb_to_hex(rgb_tuple):
 
 
 
+# def custom_hr():
+#     # Inject custom CSS to reduce vertical spacing before and after the horizontal line
+#     st.markdown("""
+#         <style>
+#             .hr-line {
+#                 margin-top: -50px;
+#                 margin-bottom: -50px;
+#                 padding-top: 0px;
+#                 padding-bottom: 0px;
+#             }
+#         </style>
+#     """, unsafe_allow_html=True)
+#     # Adding the horizontal line with reduced vertical spacing
+#     st.markdown('<hr class="hr-line">', unsafe_allow_html=True)
+
+
 def custom_hr():
     # Inject custom CSS to reduce vertical spacing before and after the horizontal line
     st.markdown("""
         <style>
             .hr-line {
-                margin-top: -5px;
+                margin-top: -5px;  /* Adjust as needed */
+                margin-bottom: -10px; /* Adjust as needed */
+                padding: 0px;
+                height: 1px; 
+                border: none;
+                background-color: #ccc;
+            }
+        </style>
+    """, unsafe_allow_html=True)
+    
+    # Adding the horizontal line with reduced vertical spacing
+    st.markdown('<div class="hr-line"></div>', unsafe_allow_html=True)
+
+
+
+
+
+def absrd_tight_hr_spacing():
+
+    # Inject CSS to reduce vertical spacing
+    st.markdown("""
+        <style>
+            .block-container {
+                padding-top: 0rem;
+                padding-bottom: 0rem;
+            }
+            .stMarkdown p {
+                margin-top: -20px;
+                margin-bottom: -20px;
+            }
+            .stButton > button {
+                margin-top: 0px;
                 margin-bottom: 0px;
             }
         </style>
     """, unsafe_allow_html=True)
-    # Adding the horizontal line with reduced vertical spacing
-    st.markdown('<hr class="hr-line">', unsafe_allow_html=True)
+
+
+
+
+
+def custom_filled_region(custom_text, bg_color="#f0f0f0", text_color="black", 
+                         border_style="bottom", border_color="black", border_thickness="2px",
+                         width_percentage=80):
+    """
+    Creates a styled filled region with customizable background color, text color, 
+    border style (bottom, top-bottom, all), border thickness, and width percentage.
+
+    Parameters:
+    - custom_text (str): Text to display inside the filled region.
+    - bg_color (str): Background color of the filled region.
+    - text_color (str): Text color.
+    - border_style (str): Choose from "bottom", "top-bottom", or "all".
+    - border_color (str): Color of the border.
+    - border_thickness (str): Thickness of the border (e.g., "2px").
+    - width_percentage (int): Percentage of the column width for the filled region.
+    """
+
+    # Define border styles based on user input
+    if border_style == "bottom":
+        border_css = f"border-bottom: {border_thickness} solid {border_color};"
+    elif border_style == "top-bottom":
+        border_css = f"border-top: {border_thickness} solid {border_color}; border-bottom: {border_thickness} solid {border_color};"
+    elif border_style == "all":
+        border_css = f"border: {border_thickness} solid {border_color};"
+    else:
+        border_css = ""  # No border
+
+    # Inject CSS with dynamic values
+    st.markdown(f"""
+        <style>
+            .custom-box {{
+                background-color: {bg_color};
+                padding: 1px;
+                border-radius: 0px;
+                text-align: center;
+                font-style: italic;
+                color: {text_color};
+                display: block;
+                max-width: {width_percentage}%;
+                margin: 0 auto;
+                {border_css}
+            }}
+        </style>
+        <div class="custom-box">{custom_text}</div>
+    """, unsafe_allow_html=True)
+
+
 
 
 
@@ -135,38 +232,54 @@ def color_hash_func(color: Color) -> Tuple[float, float, float]:
 
 
 
-def absrd__epw_location_map(data, col_lat, col_lon, zoom_level, chart_height, chart_width):
 
+def absrd__epw_location_map(data, col_lat, col_lon, zoom_level=10, chart_height=500, chart_width=700, dot_size=200, dot_color=[255, 0, 0], dot_opacity=160):
+    """
+    Generates a PyDeck map displaying location points.
 
-    # Define the PyDeck Layer
+    Parameters:
+    - data: DataFrame containing latitude and longitude columns.
+    - col_lat: Name of the latitude column.
+    - col_lon: Name of the longitude column.
+    - zoom_level: Zoom level of the map.
+    - chart_height: Height of the Streamlit chart.
+    - chart_width: Width of the Streamlit chart.
+    - dot_size: Size of the location dots (fixed, not dependent on zoom).
+    - dot_color: RGB list for dot color.
+    - dot_opacity: Opacity of the dots (0-255).
+    """
+
+    # Define the PyDeck Layer with fixed dot size and color
     layer = pdk.Layer(
-        'ScatterplotLayer',
+        "ScatterplotLayer",
         data,
-        # get_position='[lon, lat]',
-        get_position=f'[{col_lon}, {col_lat}]',
-        get_radius=200,
-        get_color='[255, 0, 0, 160]',
+        get_position=f"[{col_lon}, {col_lat}]",
+        get_radius=dot_size,  # Fixed size of dots
+        get_fill_color=dot_color + [dot_opacity],  # Color with opacity
         pickable=True,
     )
 
     # Set the PyDeck View
     view_state = pdk.ViewState(
-        latitude=data[f'{col_lat}'].mean(),
-        longitude=data[f'{col_lon}'].mean(),
+        latitude=data[col_lat].mean(),
+        longitude=data[col_lon].mean(),
         zoom=zoom_level,
         pitch=0,
     )
 
-    # Configure the map using st.pydeck_chart
+    # Render the map using Streamlit
     st.pydeck_chart(
         pdk.Deck(
             layers=[layer],
             initial_view_state=view_state,
-            map_style='mapbox://styles/mapbox/light-v9',
-            height=chart_height,  # Set the height of the map
-            width=chart_width,   # Set the width of the map
+            map_style="mapbox://styles/mapbox/light-v9",
         ),
+        use_container_width=False,  # Prevent full-width scaling
+        height=chart_height,  # Set height via Streamlit
     )
+
+
+
 
 
 
@@ -715,3 +828,119 @@ def define_yaxis_range(var_min, var_max):
     rounded_max = math.ceil(var_max / round_base) * round_base
     
     return rounded_min, rounded_max
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# Function to download file from a URL and save locally
+def download_file(url, save_path):
+    response = requests.get(url)
+    if response.status_code == 200:
+        save_path.parent.mkdir(parents=True, exist_ok=True)  # Ensure directory exists
+        with open(save_path, 'wb') as f:
+            f.write(response.content)
+        return True
+    else:
+        st.error(f"Failed to download the EPW file from {url}")
+        return False
+
+# Function to create an EPW object from a URL or local file path
+def get_epw_from_url_or_path(epw_file_path, url=None):
+    # If the path is a URL, download it locally first
+    if url:
+        local_filename = epw_file_path.name  # Get filename from path
+        if not epw_file_path.exists():  # Download if not already present
+            success = download_file(url, epw_file_path)
+            if not success:
+                st.error(f"Unable to download EPW file from {url}")
+                return None
+    # Create EPW object using local path
+    return EPW(epw_file_path)
+
+
+
+# Function to add a file to the analysis list
+def add_to_epw_files_list(epw_file_name, epw_object, epw_file_path):
+    if epw_file_name not in [item['epw_file_name'] for item in st.session_state['epw_files_list']]:
+        st.session_state['epw_files_list'].append({
+            'epw_file_name': epw_file_name,
+            'epw_object': epw_object,
+            'epw_file_path': epw_file_path,
+            'stat_file_name': epw_file_name.replace('.epw', '.stat'),
+            'stat_file_path': str(epw_file_path).replace('.epw', '.stat'),
+            })
+        st.success(f"Added {epw_file_name} to Analysis List.")
+    else:
+        st.warning(f"{epw_file_name} is already in the analysis list.")
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+def filter_epw_object(epw: EPW, start_month, start_day, start_hour, end_month, end_day, end_hour) -> EPW:
+    """Return a shallow copy of the EPW object with filtered hourly data."""
+    from ladybug.epw import EPW
+
+    analysis_period = [start_month, start_day, start_hour, end_month, end_day, end_hour]
+
+    # Create a new empty EPW instance
+    filtered_epw = EPW.__new__(EPW)
+
+    # Copy public metadata
+    filtered_epw.location = epw.location
+    filtered_epw.header = epw.header
+
+    # Filter each hourly attribute
+    for attr in [
+        'dry_bulb_temperature', 'dew_point_temperature', 'relative_humidity',
+        'atmospheric_station_pressure', 'extraterrestrial_horizontal_radiation',
+        'extraterrestrial_direct_normal_radiation', 'horizontal_infrared_radiation_intensity',
+        'global_horizontal_radiation', 'direct_normal_radiation',
+        'diffuse_horizontal_radiation', 'global_horizontal_illuminance',
+        'direct_normal_illuminance', 'diffuse_horizontal_illuminance',
+        'zenith_luminance', 'wind_direction', 'wind_speed',
+        'total_sky_cover', 'opaque_sky_cover', 'visibility',
+        'ceiling_height', 'present_weather_observation', 'present_weather_codes',
+        'precipitable_water', 'aerosol_optical_depth', 'snow_depth',
+        'days_since_last_snowfall', 'albedo', 'liquid_precipitation_depth',
+        'liquid_precipitation_quantity'
+    ]:
+        original = getattr(epw, attr)
+        filtered = absrd_apply_analysis_period(original, analysis_period)
+        setattr(filtered_epw, attr, filtered)
+
+    return filtered_epw

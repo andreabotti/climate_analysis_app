@@ -181,6 +181,10 @@ def absrd_avg_daily_profile(plot_data, plot_analysis_period, global_colorset):
 
 
 
+
+
+
+
 def plot_hourly_line_chart_with_slider(df: pd.DataFrame, variable: str, global_colorset: str):
     """
     Plot hourly line chart with range sliders.
@@ -259,6 +263,74 @@ def plot_hourly_line_chart_with_slider(df: pd.DataFrame, variable: str, global_c
 
 
 
+
+
+def convert_rgba_to_plotly_colorscale(rgba_colors):
+    """
+    Converts a list of RGBA color tuples to a Plotly-compatible colorscale.
+
+    Parameters:
+    - rgba_colors (list of tuples): Each tuple contains (R, G, B, A).
+
+    Returns:
+    - list: A Plotly-compatible colorscale where each color is mapped from 0.0 to 1.0.
+    """
+    num_colors = len(rgba_colors)  # Total number of colors
+    plotly_colorscale = []
+
+    for i, (r, g, b, a) in enumerate(rgba_colors):  # Ignore alpha (a)
+        normalized_position = i / (num_colors - 1)  # Normalize between 0 and 1
+        plotly_colorscale.append([normalized_position, f"rgb({r},{g},{b})"])
+
+    return plotly_colorscale
+
+
+
+
+
+
+
+def plot_heatmap_from_datetime_index(data, value_col, agg_func="sum", axis_min=None, axis_max=None, custom_colorscale=None):
+    """
+    Creates a heatmap from a datetime index, aggregating values by date (X-axis) and hour (Y-axis).
+
+    Parameters:
+    - data (pd.DataFrame): The input dataframe with a datetime index.
+    - value_col (str): Column name for values to be displayed in the heatmap.
+    - agg_func (str): Aggregation function ('sum', 'mean', 'count').
+    - colorscale (str): Color scale for heatmap.
+    """
+    # Ensure index is datetime
+    data.index = pd.to_datetime(data.index)
+
+    # Extract date and hour
+    data["Date"] = data.index.date
+    data["Hour"] = data.index.hour
+
+    # Aggregate data
+    pivot_table = data.pivot_table(index="Hour", columns="Date", values=value_col, aggfunc=agg_func)
+
+    # Create heatmap
+    fig = go.Figure(data=go.Heatmap(
+        z=pivot_table.values,
+        x=pivot_table.columns.astype(str),  # Convert dates to string for display
+        y=pivot_table.index,
+        zmin=axis_min,
+        zmax=axis_max,
+        colorscale=custom_colorscale,
+        colorbar=dict(title=value_col),
+    ))
+
+    # Update layout
+    fig.update_layout(
+        xaxis_title="Date",
+        yaxis_title="Hour",
+        template="plotly_white",
+        # height=400,
+        margin=dict(l=30, r=30, t=40, b=20),
+    )
+    
+    return fig
 
 
 
@@ -356,7 +428,7 @@ def create_stacked_bar_chart(binned_data, color_map, normalize):
         xaxis_title="Month",
         yaxis_title=yaxis_title,
         height=450,
-        margin=dict(l=40, r=40, t=5, b=10),
+        margin=dict(l=30, r=30, t=40, b=10),
     )
 
     # Ensure x-axis labels are treated as text categories
@@ -723,6 +795,10 @@ def get_degree_days_figure(
     return monthly_chart.plot(title='Degree Days', center_title=True), hourly_heat, hourly_cool
 
 
+
+
+
+
 def get_windrose_figure(st_month: int, st_day: int, st_hour: int, end_month: int,
                         end_day: int, end_hour: int, epw, global_colorset) -> Figure:
     """Create windrose figure.
@@ -886,5 +962,88 @@ def absrd__line_chart_daily__range( hourly_data, show_legend, legend_position, m
 
     # Create figure
     fig = go.Figure(data=traces, layout=layout)
+
+    return fig
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+def plot_windrose(wind_direction, wind_speed, num_sectors=16, speed_bins=None,
+                  unit='m/s', color_map=None):
+
+    df = pd.DataFrame({
+        'direction': wind_direction,
+        'speed': wind_speed
+    }).dropna()
+
+    # Direction bins
+    sector_size = 360 / num_sectors
+    sector_edges = np.linspace(0, 360, num_sectors + 1)
+    sector_labels = [(i + 0.5) * sector_size for i in range(num_sectors)]
+    df['dir_bin'] = pd.cut(df['direction'] % 360,
+                           bins=sector_edges,
+                           labels=sector_labels,
+                           include_lowest=True,
+                           right=False)
+
+    # Speed bins
+    if speed_bins is None:
+        speed_bins = [0, 1, 3, 5, 7, 10, 15, 20, np.inf]
+    speed_labels = [f'{speed_bins[i]}–{speed_bins[i+1]} {unit}' for i in range(len(speed_bins) - 1)]
+    df['speed_bin'] = pd.cut(df['speed'], bins=speed_bins,
+                             labels=speed_labels, include_lowest=True)
+
+    # Assign color to each bin
+    bin_mins = [float(label.split('–')[0]) for label in speed_labels]
+    norm = (np.array(bin_mins) - min(bin_mins)) / (max(bin_mins) - min(bin_mins))
+    color_lookup = {
+        label: rgb_to_hex(color_map[int(x * (len(color_map) - 1))][:3])
+        for label, x in zip(speed_labels, norm)
+    }
+
+    # Group data: one row per (direction_bin, speed_bin)
+    grouped = df.groupby(['dir_bin', 'speed_bin']).size().reset_index(name='count')
+    total = grouped['count'].sum()
+    grouped['frequency'] = 100 * grouped['count'] / total
+
+    # Pivot to wide format for stacking
+    wide_df = grouped.pivot(index='dir_bin', columns='speed_bin', values='frequency').fillna(0)
+    wide_df = wide_df.reindex(sector_labels)  # ensure order
+
+    # Plotly Figure
+    fig = go.Figure()
+
+    for speed_bin in wide_df.columns:
+        fig.add_trace(go.Barpolar(
+            r=wide_df[speed_bin],
+            theta=wide_df.index.astype(float),
+            name=speed_bin,
+            marker_color=color_lookup.get(speed_bin, '#cccccc')
+        ))
+
+    fig.update_layout(
+        template='plotly_white',
+        # title='Windrose',
+        polar=dict(
+            angularaxis=dict(direction='clockwise', rotation=90),
+            radialaxis=dict(ticksuffix='%', showticklabels=True)
+        ),
+        legend_title='Wind Speed',
+        # height=400,
+        margin=dict(l=20, r=20, t=60, b=20),
+    )
 
     return fig
