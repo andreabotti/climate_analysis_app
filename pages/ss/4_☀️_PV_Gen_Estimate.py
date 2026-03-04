@@ -5,16 +5,18 @@ import pandas as pd
 import numpy as np
 from ladybug.epw import EPW
 
-from fn__libraries import fetch_pv_production_data, iterate_pv_production
-from fn__libraries import *
-from fn__chart_libraries import *
+from libs.fn__libraries import fetch_pv_production_data, iterate_pv_production
+from libs.fn__libraries import *
+from libs.fn__chart_libraries import *
+from libs.fn__page_header import create_page_header
+
 
 mapbox_access_token = 'pk.eyJ1IjoiYW5kcmVhYm90dGkiLCJhIjoiY2xuNDdybms2MHBvMjJqbm95aDdlZ2owcyJ9.-fs8J1enU5kC3L4mAJ5ToQ'
 
 
 ####################################################################################
 # PAGE HEADER
-from fn__page_header import create_page_header
+from libs.fn__page_header import create_page_header
 create_page_header()
 
 
@@ -151,7 +153,7 @@ if st.sidebar.button("Fetch PVGIS Data"):
 
         ####################################################################################
         # Create three tabs: Charts, Tables and Bullets, and Raw Output
-        tabs = st.tabs(["📊 Charts", "📋 Tables and Bullets", "📄 Raw Output"])
+        tabs = st.tabs(["📊 Charts", "📋 Tables", "📄 Raw Output"])
 
         # Tab for visualizing the charts
         with tabs[0]:
@@ -183,27 +185,37 @@ if st.sidebar.button("Fetch PVGIS Data"):
 
         # Tab for displaying tables and bullet points
         with tabs[1]:
-            st.markdown(f'##### PVGIS Data - Tables and Bullets')
-            chart_cols = st.columns(len(epw_files))  # Create columns for each EPW file
+            st.markdown(f'##### PVGIS Data Tables')
+            chart_cols = st.columns(len(epw_files), gap="large")
             for col, epw_file in zip(chart_cols, epw_files):
                 with col:
-                    
-                    # Display Monthly DataFrame
-                    if not df_pv_monthly_dict[epw_file].empty:
-                        st.write(f"Monthly PV Production Data for {epw_file}:")
-                        table = df_pv_monthly_dict[epw_file].set_index('month')
-                        st.dataframe(table, width=500, height=460)
+                    df_monthly = df_pv_monthly_dict[epw_file]
+                    if not df_monthly.empty:
+                        df_daily, df_monthly_vars = split_and_transpose_pv_monthly(df_monthly)
+
+                        # Daily data table (12 columns = months) + variable list
+                        if not df_daily.empty:
+                            st.write(f"**Daily averages** ({epw_file._location.city})")
+                            st.dataframe(df_daily.round(2), use_container_width=True, height=120)
+                            # st.write("**List of variables**")
+                            for bullet in extract_meta_variable_info_by_type(pv_production_data_dict.get(epw_file) or {}, daily_only=True):
+                                st.caption(bullet)
+
+                        custom_hr()
+
+                        # Monthly data table (12 columns = months) + variable list
+                        if not df_monthly_vars.empty:
+                            st.write(f"**Monthly data** ({epw_file._location.city})")
+                            st.dataframe(df_monthly_vars.round(2), use_container_width=True, height=180)
+                            # st.write("**List of variables**")
+                            for bullet in extract_meta_variable_info_by_type(pv_production_data_dict.get(epw_file) or {}, daily_only=False):
+                                st.caption(bullet)
 
                     # Display Totals DataFrame
                     if not df_pv_totals_dict[epw_file].empty:
-                        st.write(f"Yearly PV Production Totals for {epw_file}:")
+                        custom_hr()
+                        st.write(f"**Yearly PV Production Totals** ({epw_file._location.city})")
                         st.dataframe(df_pv_totals_dict[epw_file])
-
-                    # Display Bullet Points
-                    custom_hr()
-                    st.write(f"**List of Variables**")
-                    for bullet in bullet_points_dict[epw_file]:
-                        st.caption(bullet)
 
         # Tab for displaying raw JSON output
         with tabs[2]:
@@ -211,7 +223,6 @@ if st.sidebar.button("Fetch PVGIS Data"):
             chart_cols = st.columns(len(epw_files))  # Create columns for each EPW file
             for col, epw_file in zip(chart_cols, epw_files):
                 with col:
-                    # st.markdown(f"### {epw_file}")
                     with st.expander(f"Hourly Data (Raw JSON) for {epw_file}"):
                         st.json(hourly_data_dict[epw_file])
 
@@ -259,10 +270,8 @@ if st.sidebar.button("Fetch PVGIS Data for multiple values of tilt and azimuth (
 
                 if data:
                     df = pd.DataFrame(data)
-                    # col.write(df)                
 
                 output_cols = df.columns.drop( ['azimuth', 'tilt','daily_energy', 'daily_irr', 'total_loss'] )
-                # st.write(output_cols)
 
                 for oc in output_cols:
                     df_filtered = df[['azimuth', 'tilt', oc]]
@@ -278,9 +287,7 @@ if st.sidebar.button("Fetch PVGIS Data for multiple values of tilt and azimuth (
                         'yearly_irr': {'metric': '[kWh/m²/yr]', 'range': [0, 2000], 'colormap': 'Oranges'}
                     }
 
-                    # Function to return details based on the output_var
                     def get_metric_details(output_var):
-                        # Check if the output_var exists in the dictionary
                         if output_var in metrics_dict:
                             return metrics_dict[output_var]
                         else:
@@ -317,4 +324,3 @@ if st.sidebar.button("Fetch PVGIS Data for multiple values of tilt and azimuth (
                 
                 with st.expander('Raw JSON data'):
                     st.write(data)
-                    

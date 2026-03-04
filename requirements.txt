@@ -1,14 +1,30 @@
-ladybug==0.0.2
-ladybug-charts==1.19.4
-ladybug-comfort==0.18.37
-ladybug-pandas==0.4.1
-matplotlib
-numpy
-pandas
-plotly
-pydeck
-requests
-setuptools
-streamlit
-streamlit-vtkjs
-streamlit_super_slider
+# Climate Analysis App – full dependency list
+# Install: pip install -r requirements.txt
+
+# ── Core app framework ─────────────────────────────────────────────────────
+streamlit>=1.54.0
+numpy>=2.0.0,<3
+pandas>=2.0.0
+setuptools>=65.0.0
+
+# ── Charts & visualisation ─────────────────────────────────────────────────
+plotly>=6.0.0
+pydeck>=0.9.0
+matplotlib>=3.7.0
+
+# ── Ladybug Tools (EPW, climate, comfort) ──────────────────────────────────
+# lbt-ladybug bundles ladybug-core, ladybug-comfort, ladybug-display, ladybug-radiance
+lbt-ladybug>=0.27.0
+ladybug-charts>=1.19.4
+ladybug-pandas>=0.4.1
+
+# ── Data & APIs ────────────────────────────────────────────────────────────
+requests>=2.28.0
+boto3>=1.28.0
+
+# ── UI & assets ─────────────────────────────────────────────────────────────
+Pillow>=10.0.0
+
+# ── Optional Streamlit extensions (uncomment if needed) ─────────────────────
+# streamlit-super-slider>=0.2.0
+# streamlit-vtkjs

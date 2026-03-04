@@ -1,23 +1,34 @@
 # IMPORT LIBRARIES
 import os
 import pathlib
-# import datetime
-# from datetime import datetime, date
+from datetime import date
 
 import streamlit as st
 import pandas as pd
 import numpy as np
 from ladybug.epw import EPW
 
-from fn__libraries import *
-from fn__chart_libraries import *
+from libs.fn__data import *
+from libs.fn__charts import *
+from libs.fn__ui import f204__custom_divider as custom_divider
+from libs.fn__header import create_page_header
 
 mapbox_access_token = 'pk.eyJ1IjoiYW5kcmVhYm90dGkiLCJhIjoiY2xuNDdybms2MHBvMjJqbm95aDdlZ2owcyJ9.-fs8J1enU5kC3L4mAJ5ToQ'
 
 ####################################################################################
 # PAGE HEADER
-from fn__page_header import create_page_header
-create_page_header()
+from libs.fn__header import create_page_header
+
+# Fixed size logo with margins
+create_page_header(
+    logo_width="2500px",
+    logo_height="auto",
+    logo_max_height="70px",
+    logo_margin="65px 10px 0 0",
+    logo_padding="0px",
+)
+
+
 
 ####################################################################################
 # LOAD DATA INTO SESSION STATE
@@ -85,10 +96,6 @@ with st.sidebar:
 
 
 
-
-
-
-
 ####################################################################################
 # Replace Ladybug Analysis Period with Pandas Filtering
 all_values = []
@@ -145,12 +152,6 @@ axis_max = axis_max * 1.05
 
 
 
-
-
-
-
-
-
 ########################################
 # Tabs for Hourly and Daily Charts
 st.markdown("""
@@ -190,7 +191,6 @@ tabs = st.tabs([
 
 
 
-
 ########################################
 # Hourly Chart - LINE
 with tabs[0]:
@@ -212,22 +212,7 @@ with tabs[0]:
                 with col:
 
                     st.write('')
-                    custom_filled_region(
-                        f"{epw_name}",
-                        bg_color="black",
-                        text_color="green",
-                        border_style="top-bottom",
-                        border_color="black", border_thickness="2px",
-                        width_percentage=100,
-                        )
-                    # custom_filled_region(
-                    #     f"{epw_name}",
-                    #     # bg_color="#F0F2F6",
-                    #     text_color="blue",
-                    #     border_style="bottom", border_color="grey", border_thickness="1px",
-                    #     width_percentage=100,
-                    #     )
-
+                    st.markdown(f"##### {epw_name}")
 
                     # Extract the filtered DataFrame
                     data_col = epw_col._get_data_by_field(fields[hourly_selected])
@@ -271,12 +256,12 @@ with tabs[0]:
                             rangeslider=dict(visible=True)
                         ),
                         template="plotly_white",
-                        height=400,
+                        height=550,
                         margin=dict(l=20, r=20, t=50, b=20)
                     )
 
                     # Render the chart
-                    st.plotly_chart(fig_line, use_container_width=True)
+                    st.plotly_chart(fig_line, use_container_width=True, key=f"line_{epw_name}")
 
         elif chart_mode == "Combined":
 
@@ -326,14 +311,12 @@ with tabs[0]:
                     rangeslider=dict(visible=True)
                 ),
                 template="plotly_white",
-                height=400,
+                height=550,
                 margin=dict(l=20, r=20, t=40, b=20)
             )
 
             # Render the chart
-            st.plotly_chart(fig_combined, use_container_width=True)
-
-
+            st.plotly_chart(fig_combined, use_container_width=True, key="combined_line")
 
 
 
@@ -345,31 +328,14 @@ with tabs[0]:
 # Hourly Charts - HEATMAP
 with tabs[1]:
 
-
-    # st.markdown(f'##### Heatmap chart with hourly data')
     st.write('')
-
 
     chart_cols = st.columns(len(epw_names))
     for col, epw_col, epw_name in zip(chart_cols, epw_files, epw_names):
 
         with col: 
 
-            # st.write('')
-            custom_filled_region(
-                f"{epw_name}",
-                bg_color="black",
-                text_color="blue",
-                border_style="bottom",
-                border_color="black", border_thickness="1px",
-                width_percentage=80,
-                )
-
-            # custom_filled_region(f"{epw_name}", bg_color="#F0F2F6",
-            #                         text_color="black", 
-            #                         border_style="bottom", border_color="grey", border_thickness="1px",
-            #                         width_percentage=70)
-
+            st.markdown(f"##### {epw_name}")
 
             # Extract the filtered DataFrame
             data_col = epw_col._get_data_by_field(fields[hourly_selected])
@@ -387,13 +353,10 @@ with tabs[1]:
             filtered_df = df.loc[start_datetime:end_datetime]
             
 
-            # Streamlit UI elements
             value_col = 'values'
             agg_func = 'mean'
-            # colorscale = st.selectbox("Select Color Scale", ["Viridis", "Plasma", "Cividis", "Blues", "Reds"])
 
             rgba_colors = get_colors(switch=False, global_colorset=global_colorset)
-            # st.write(rgba_colors)
 
             plotly_colorscale = convert_rgba_to_plotly_colorscale(rgba_colors)
 
@@ -402,29 +365,17 @@ with tabs[1]:
                 data=filtered_df, value_col=value_col, agg_func=agg_func, axis_min=axis_min, axis_max=axis_max, custom_colorscale=plotly_colorscale
                 )
 
-            st.plotly_chart(fig_heatmap)
+            st.plotly_chart(fig_heatmap, key=f"heatmap_{epw_name}")
 
 
 
 
 
 ########################################
+# Monthly Chart - STACKED COLUMNS
 
-
-
-
-
-
-
-
-
-
-
-########################################
 with tabs[2]:
 
-    # st.markdown('##### Stacked bars with binned data')
-    st.write('')
 
     # User inputs for binning
     widget_col, spacing, chart_col = st.columns([10,1,80])
@@ -451,11 +402,7 @@ with tabs[2]:
         with col:
 
             st.write('')
-            custom_filled_region(f"{epw_name}", bg_color="#F0F2F6",
-                                    text_color="black", 
-                                    border_style="bottom", border_color="grey", border_thickness="1px",
-                                    width_percentage=70)
-
+            st.markdown(f"##### {epw_name}")
 
             data_col = epw_col._get_data_by_field(fields[hourly_selected])
 
@@ -471,18 +418,12 @@ with tabs[2]:
                 # Process and bin the timeseries data
                 binned_data = bin_timeseries_data(df_plot, bin_min_val, bin_max_val, bin_step)
 
-                # if bin_normalize == "% Hours":
                 binned_data = normalize_data(binned_data)
                 labels = binned_data['binned'].unique()
                 
                 # Create and display the stacked bar chart
                 fig = create_stacked_bar_chart(binned_data=binned_data, color_map=global_colorset, normalize = bin_normalize)
-                col.plotly_chart(fig)
-
-########################################
-
-
-
+                col.plotly_chart(fig, key=f"stacked_bar_{epw_name}")
 
 
 
@@ -490,28 +431,29 @@ with tabs[2]:
 
 ######################################## METRICS DISPLAY
 with tabs[3]:
-    # st.markdown('##### Metrics Summary')
-    thresholds = {}  # Define a threshold dictionary to store user-defined thresholds for each EPW file
-    col_number_input, col_all_metrics = st.columns([10,45])
+    thresholds = {}
+    col_number_input,spacing, col_all_metrics = st.columns([15, 1, 80])
 
+    
     with col_number_input:
         col_number_input, spacing = st.columns([10, 1])
         with col_number_input:
             var_name = str(data_col.header.data_type)
             var_unit = str(data_col.header.unit)
 
-            # Create input boxes for three thresholds for the selected variable
-            st.write(''); st.write(''); st.write(''); st.write(''); st.write('')
+
+            custom_divider(spacing_above_px=88, spacing_below_px=16)
+            
             threshold_01 = st.number_input(
                 f"Threshold for {var_name} ({var_unit})", value=28.0, format="%0.1f", step=1.0, key=f"threshold_01"
             )
-            custom_hr()
-            # absrd_tight_hr_spacing()
+
+            custom_divider(spacing_above_px=15, spacing_below_px=16)
 
             threshold_02 = st.number_input(
                 f"Threshold for {var_name} ({var_unit})", value=30.0, format="%0.1f", step=1.0, key=f"threshold_02"
             )
-            custom_hr()
+            custom_divider(spacing_above_px=15, spacing_below_px=10)
 
             threshold_03 = st.number_input(
                 f"Threshold for {var_name} ({var_unit})", value=32.0, format="%0.1f", step=1.0, key=f"threshold_03"
@@ -528,14 +470,7 @@ with tabs[3]:
             with col:
 
     
-                custom_filled_region(
-                    f"{epw_name}",
-                    bg_color="blue",
-                    text_color="green",
-                    border_style="top-bottom",
-                    border_color="black", border_thickness="2px",
-                    width_percentage=80,
-                    )
+                st.markdown(f"##### {epw_name}")
 
                 st.write(''); st.write('')
 
@@ -566,14 +501,14 @@ with tabs[3]:
                     delta=None,
                 )
                 with col:
-                    custom_hr()
+                    custom_divider(spacing_above_px=15, spacing_below_px=10)
                 col.metric(
                     label=f"Hours Above {threshold_02}{var_unit}",
                     value=f"{data_above_threshold_02} ({percentage_above_threshold_02:.1f}%)",
                     delta=None,
                 )
                 with col:
-                    custom_hr()
+                    custom_divider(spacing_above_px=15, spacing_below_px=10)
                 col.metric(
                     label=f"Hours Above {threshold_03}{var_unit}",
                     value=f"{data_above_threshold_03} ({percentage_above_threshold_03:.1f}%)",
@@ -594,10 +529,7 @@ with tabs[4]:
         with col:
 
             st.write('')
-            custom_filled_region(f"{epw_name}", bg_color="#F0F2F6",
-                                    text_color="black", 
-                                    border_style="bottom", border_color="grey", border_thickness="1px",
-                                    width_percentage=70)
+            st.markdown(f"##### {epw_name}")
 
             
             var_name = str(data_col.header.data_type)
@@ -605,8 +537,6 @@ with tabs[4]:
 
             st.write('')
             st.write('')
-            # st.markdown(f'##### Sunpath & {var_name}')
-
 
             # Extract the data and timestamps
             data_col = epw_col._get_data_by_field(fields[hourly_selected])
@@ -626,15 +556,8 @@ with tabs[4]:
             )
             
             st.plotly_chart(sunpath_figure, use_container_width=True,
-                            config=get_figure_config(f'Sunpath_{epw_name}'))
-
-
-
-
-
-
-
-
+                            config=get_figure_config(f'Sunpath_{epw_name}'),
+                            key=f"sunpath_{epw_name}")
 
 
 
@@ -659,15 +582,7 @@ with tabs[5]:
         with col:
 
             st.write('')
-            custom_filled_region(
-                f"{epw_name}",
-                bg_color="#F0F2F6",
-                text_color="black",
-                border_style="bottom",
-                border_color="grey",
-                border_thickness="1px",
-                width_percentage=70,
-            )
+            st.markdown(f"##### {epw_name}")
 
             # --- Extract wind speed and direction ---
             wind_speed_data = epw_col.wind_speed
@@ -697,4 +612,4 @@ with tabs[5]:
                 unit='m/s',
                 color_map=rgba_colors,
             )
-            st.plotly_chart(fig, use_container_width=True)
+            st.plotly_chart(fig, use_container_width=True, key=f"windrose_{epw_name}")

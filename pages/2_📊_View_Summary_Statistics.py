@@ -6,8 +6,10 @@ import pandas as pd
 import numpy as np
 from ladybug.epw import EPW
 
-from fn__libraries import *
-from fn__chart_libraries import *
+from libs.fn__data import *
+from libs.fn__charts import *
+from libs.fn__ui import f204__custom_divider as custom_divider, absrd_style_df_streamlit, row_style
+from libs.fn__header import create_page_header
 
 mapbox_access_token = 'pk.eyJ1IjoiYW5kcmVhYm90dGkiLCJhIjoiY2xuNDdybms2MHBvMjJqbm95aDdlZ2owcyJ9.-fs8J1enU5kC3L4mAJ5ToQ'
 
@@ -15,8 +17,16 @@ mapbox_access_token = 'pk.eyJ1IjoiYW5kcmVhYm90dGkiLCJhIjoiY2xuNDdybms2MHBvMjJqbm
 
 ####################################################################################
 # PAGE HEADER
-from fn__page_header import create_page_header
-create_page_header()
+from libs.fn__header import create_page_header
+
+# Fixed size logo with margins
+create_page_header(
+    logo_width="2500px",
+    logo_height="auto",
+    logo_max_height="70px",
+    logo_margin="65px 10px 0 0",
+    logo_padding="0px",
+)
 
 
 
@@ -58,7 +68,7 @@ dict_titles = {
 
 
 
-chart_cols = st.columns(len(stat_names))
+chart_cols = st.columns(len(stat_names), gap="large")
 for col, stat_name, epw_file in zip(chart_cols, stat_names, epw_files):
     with col:
         # st.write(epw_col)
@@ -66,7 +76,11 @@ for col, stat_name, epw_file in zip(chart_cols, stat_names, epw_files):
         
         stat_file_path = next((item["stat_file_path"] for item in epw_files_list if item["stat_file_name"] == stat_name), None)
         # st.caption(stat_file_path)
-        # custom_hr()
+        # custom_divider(spacing_above_px=15, spacing_below_px=5)
+
+        if not stat_file_path or not os.path.exists(stat_file_path):
+            st.warning(f"STAT file not found: **{stat_name}**. The file may be missing from the archive or path. Skipping summary statistics for this location.")
+            continue
 
         dry_bulb_df_final, summary_dict = absrd_process_stat_file(file_path=stat_file_path)
 
@@ -88,12 +102,11 @@ for col, stat_name, epw_file in zip(chart_cols, stat_names, epw_files):
 
 
 
-
         # Loop through the slicing ranges and create sub-DataFrames
         i=0
         for start, end in slicing_ranges:
 
-            custom_hr()
+            custom_divider(spacing_above_px=15, spacing_below_px=5)
             st.markdown(f'##### {dict_titles[i]}')
 
             # Slice the DataFrame based on the index range
@@ -118,7 +131,7 @@ for col, stat_name, epw_file in zip(chart_cols, stat_names, epw_files):
             i+=1
 
 
-        custom_hr()
+        custom_divider(spacing_above_px=15, spacing_below_px=5)
         st.markdown(f'##### Daytime and NightTime Temperatures')
 
         fig_daytime_nighttime = absrd_daytime_nighttime_scatter(df_daytime, df_nighttime)
