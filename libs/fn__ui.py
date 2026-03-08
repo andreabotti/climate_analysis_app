@@ -25,6 +25,7 @@ Function index
 
 from __future__ import annotations
 
+import re
 from typing import List
 
 import pandas as pd
@@ -190,6 +191,26 @@ def f204__custom_divider(
 
 
 # ─────────────────────────────────────────────────────────────────────────────
+# f204b – split EPW/STAT title for two-line display
+# ─────────────────────────────────────────────────────────────────────────────
+def f204b__split_epw_title(name: str) -> str:
+    """
+    Split EPW/STAT filename before station ID for consistent two-line display.
+    E.g. ITA_ER_Bologna-Marconi.AP.161400_TMYx.2009-2023.stat
+    → ITA_ER_Bologna-Marconi.AP<br>.161400_TMYx.2009-2023.stat
+    """
+    m = re.search(r"\.(\d{5,6})[_\.]", name)
+    if m:
+        idx = m.start()
+        return f"{name[:idx]}<br>{name[idx:]}"
+    # Fallback: split at last dot (before extension)
+    last_dot = name.rfind(".")
+    if last_dot > 0:
+        return f"{name[:last_dot]}<br>{name[last_dot:]}"
+    return name
+
+
+# ─────────────────────────────────────────────────────────────────────────────
 # f205
 # ─────────────────────────────────────────────────────────────────────────────
 def f205__custom_hr() -> None:
@@ -348,6 +369,7 @@ def f211__epw_location_map(
 # ── Backward-compatible aliases ───────────────────────────────────────────────
 inject_global_css        = f203__inject_global_css
 custom_divider           = f204__custom_divider
+split_epw_title          = f204b__split_epw_title
 custom_hr                = f205__custom_hr
 absrd_tight_hr_spacing   = f206__tight_hr_spacing
 custom_filled_region     = f207__custom_filled_region

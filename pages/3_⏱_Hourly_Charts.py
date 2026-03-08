@@ -10,7 +10,7 @@ from ladybug.epw import EPW
 
 from libs.fn__data import *
 from libs.fn__charts import *
-from libs.fn__ui import f204__custom_divider as custom_divider
+from libs.fn__ui import f204__custom_divider as custom_divider, f204b__split_epw_title as split_epw_title
 from libs.fn__header import create_page_header
 
 mapbox_access_token = 'pk.eyJ1IjoiYW5kcmVhYm90dGkiLCJhIjoiY2xuNDdybms2MHBvMjJqbm95aDdlZ2owcyJ9.-fs8J1enU5kC3L4mAJ5ToQ'
@@ -44,7 +44,6 @@ if len(epw_names) < 1:
     st.stop()
 
 ####################################################################################
-
 
 
 
@@ -96,10 +95,15 @@ with st.sidebar:
 
 
 
+
+
 ####################################################################################
 # Replace Ladybug Analysis Period with Pandas Filtering
 all_values = []
 chart_cols = st.columns(len(epw_names))
+
+
+
 
 for col, epw_col, epw_name in zip(chart_cols, epw_files, epw_names):
     with col:
@@ -190,7 +194,6 @@ tabs = st.tabs([
 
 
 
-
 ########################################
 # Hourly Chart - LINE
 with tabs[0]:
@@ -212,7 +215,7 @@ with tabs[0]:
                 with col:
 
                     st.write('')
-                    st.markdown(f"##### {epw_name}")
+                    st.markdown(f"###### {split_epw_title(epw_name)}", unsafe_allow_html=True)
 
                     # Extract the filtered DataFrame
                     data_col = epw_col._get_data_by_field(fields[hourly_selected])
@@ -335,7 +338,7 @@ with tabs[1]:
 
         with col: 
 
-            st.markdown(f"##### {epw_name}")
+            st.markdown(f"###### {split_epw_title(epw_name)}", unsafe_allow_html=True)
 
             # Extract the filtered DataFrame
             data_col = epw_col._get_data_by_field(fields[hourly_selected])
@@ -398,32 +401,49 @@ with tabs[2]:
     with chart_col:
         chart_cols = st.columns(len(epw_names))
 
-    for col, epw_col, epw_name in zip(chart_cols, epw_files, epw_names):
+    # CSS for chart card containers: padding and margins
+    st.markdown("""
+        <style>
+            [class^="st-key-chart-card-"] {
+                padding: 50px 0 0 0 !important;
+                margin: 0 0 0 40px !important;
+            }
+        </style>
+    """, unsafe_allow_html=True)
+
+    for i, (col, epw_col, epw_name) in enumerate(zip(chart_cols, epw_files, epw_names)):
+
         with col:
 
             st.write('')
-            st.markdown(f"##### {epw_name}")
+            st.markdown(f"###### {split_epw_title(epw_name)}", unsafe_allow_html=True)
 
-            data_col = epw_col._get_data_by_field(fields[hourly_selected])
-
-            if start_month > end_month:
-                st.sidebar.error("Start month must be less than or equal to End month")
-            else:
-                df_plot = slice_data_by_month(plot_data = data_col, start_month=start_month, end_month=end_month)
+            with st.container(
+                border=True, horizontal=True,
+                horizontal_alignment="left", vertical_alignment="top", gap="xxsmall",
+                key=f"chart-card-{i}"):
 
 
-            if bin_min_val >= bin_max_val:
-                st.sidebar.error("Min value must be less than Max value")
-            else:
-                # Process and bin the timeseries data
-                binned_data = bin_timeseries_data(df_plot, bin_min_val, bin_max_val, bin_step)
+                data_col = epw_col._get_data_by_field(fields[hourly_selected])
+                # st.write(data_col)
+                if start_month > end_month:
+                    st.sidebar.error("Start month must be less than or equal to End month")
+                else:
+                    df_plot = slice_data_by_month(plot_data = data_col, start_month=start_month, end_month=end_month)
 
-                binned_data = normalize_data(binned_data)
-                labels = binned_data['binned'].unique()
-                
-                # Create and display the stacked bar chart
-                fig = create_stacked_bar_chart(binned_data=binned_data, color_map=global_colorset, normalize = bin_normalize)
-                col.plotly_chart(fig, key=f"stacked_bar_{epw_name}")
+
+                if bin_min_val >= bin_max_val:
+                    st.sidebar.error("Min value must be less than Max value")
+                else:
+                    # Process and bin the timeseries data
+                    binned_data = bin_timeseries_data(df_plot, bin_min_val, bin_max_val, bin_step)
+
+                    binned_data = normalize_data(binned_data)
+                    labels = binned_data['binned'].unique()
+                    
+                    # Create and display the stacked bar chart
+                    fig = create_stacked_bar_chart(binned_data=binned_data, color_map=global_colorset, normalize = bin_normalize)
+                    st.plotly_chart(fig, key=f"stacked_bar_{epw_name}")
 
 
 
@@ -442,18 +462,18 @@ with tabs[3]:
             var_unit = str(data_col.header.unit)
 
 
-            custom_divider(spacing_above_px=88, spacing_below_px=16)
+            custom_divider(spacing_above_px=96, spacing_below_px=10)
             
             threshold_01 = st.number_input(
                 f"Threshold for {var_name} ({var_unit})", value=28.0, format="%0.1f", step=1.0, key=f"threshold_01"
             )
 
-            custom_divider(spacing_above_px=15, spacing_below_px=16)
+            custom_divider(spacing_above_px=22, spacing_below_px=10)
 
             threshold_02 = st.number_input(
                 f"Threshold for {var_name} ({var_unit})", value=30.0, format="%0.1f", step=1.0, key=f"threshold_02"
             )
-            custom_divider(spacing_above_px=15, spacing_below_px=10)
+            custom_divider(spacing_above_px=22, spacing_below_px=10)
 
             threshold_03 = st.number_input(
                 f"Threshold for {var_name} ({var_unit})", value=32.0, format="%0.1f", step=1.0, key=f"threshold_03"
@@ -470,7 +490,7 @@ with tabs[3]:
             with col:
 
     
-                st.markdown(f"##### {epw_name}")
+                st.markdown(f"###### {split_epw_title(epw_name)}", unsafe_allow_html=True)
 
                 st.write(''); st.write('')
 
@@ -529,7 +549,7 @@ with tabs[4]:
         with col:
 
             st.write('')
-            st.markdown(f"##### {epw_name}")
+            st.markdown(f"###### {split_epw_title(epw_name)}", unsafe_allow_html=True)
 
             
             var_name = str(data_col.header.data_type)
@@ -582,7 +602,7 @@ with tabs[5]:
         with col:
 
             st.write('')
-            st.markdown(f"##### {epw_name}")
+            st.markdown(f"###### {split_epw_title(epw_name)}", unsafe_allow_html=True)
 
             # --- Extract wind speed and direction ---
             wind_speed_data = epw_col.wind_speed

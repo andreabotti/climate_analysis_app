@@ -397,6 +397,8 @@ def f113__process_stat_file(file_path: str):
 
     summary_dict: dict = {}
     for row in section_data[-2:]:
+        if len(row) < 2:
+            continue
         if "Maximum Dry Bulb temperature" in row[0]:
             summary_dict["Maximum Dry Bulb Temperature"] = row[1].strip()
         elif "Minimum Dry Bulb temperature" in row[0]:

@@ -8,7 +8,7 @@ from ladybug.epw import EPW
 
 from libs.fn__data import *
 from libs.fn__charts import *
-from libs.fn__ui import f204__custom_divider as custom_divider, absrd_style_df_streamlit, row_style
+from libs.fn__ui import f204__custom_divider as custom_divider, f204b__split_epw_title as split_epw_title, absrd_style_df_streamlit, row_style
 from libs.fn__header import create_page_header
 
 mapbox_access_token = 'pk.eyJ1IjoiYW5kcmVhYm90dGkiLCJhIjoiY2xuNDdybms2MHBvMjJqbm95aDdlZ2owcyJ9.-fs8J1enU5kC3L4mAJ5ToQ'
@@ -72,7 +72,7 @@ chart_cols = st.columns(len(stat_names), gap="large")
 for col, stat_name, epw_file in zip(chart_cols, stat_names, epw_files):
     with col:
         # st.write(epw_col)
-        st.markdown(f"<h5 style='text-align: center; color: black;'>{stat_name}</h5>", unsafe_allow_html=True)
+        st.markdown(f"<h5 style='text-align: center;'>{split_epw_title(stat_name)}</h5>", unsafe_allow_html=True)
         
         stat_file_path = next((item["stat_file_path"] for item in epw_files_list if item["stat_file_name"] == stat_name), None)
         # st.caption(stat_file_path)
