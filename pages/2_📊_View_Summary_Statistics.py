@@ -114,7 +114,7 @@ for col, stat_name, epw_file in zip(chart_cols, stat_names, epw_files):
 
             if i>0:
                 sub_df__styled = absrd_style_df_streamlit(df=sub_df, range_min_max=[-10,40], colormap='RdBu_r')
-                st.dataframe(sub_df__styled, use_container_width=True)
+                st.dataframe(sub_df__styled, width='stretch')
                 if i==2:
                     df_daytime = sub_df
                 if i==3:
@@ -126,7 +126,7 @@ for col, stat_name, epw_file in zip(chart_cols, stat_names, epw_files):
 
                 # Apply the custom row styling function using .apply with axis=1 for rows
                 styled_df = df_reset.style.apply(lambda x: row_style(df_reset,x.name), axis=1)            
-                st.dataframe(styled_df, use_container_width=True)
+                st.dataframe(styled_df, width='stretch')
 
             i+=1
 

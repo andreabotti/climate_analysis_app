@@ -106,9 +106,9 @@ with st.sidebar:
     st.markdown("#### ⚡ System Sizing")
 
 
-    # Use most recent year for which PVGIS data is available (no user input)
-    _recent_year = datetime.now().year
-    start_year = end_year = _recent_year
+    # Use most recent year for which PVGIS data is available (PVGIS has no future-year data)
+    _recent_year = min(datetime.now().year - 1, 2024)
+    start_year = end_year = max(_recent_year, 2005)
 
     col_sidebar_1, col_sidebar_2 = st.sidebar.columns([2, 2])
 
@@ -138,7 +138,7 @@ with st.sidebar:
 
     custom_divider(spacing_above_px=15, spacing_below_px=30)
 
-    fetch_btn = st.sidebar.button("▶  Fetch PVGIS Data", type="primary", use_container_width=True)
+    fetch_btn = st.sidebar.button("▶  Fetch PVGIS Data", type="primary", width='stretch')
 
     # ── Tilt × Azimuth matrix — checkbox + button (replaces standalone button) ──
     run_matrix = st.sidebar.checkbox(
@@ -147,7 +147,7 @@ with st.sidebar:
         help="Iterates over a grid of tilt and azimuth values. Calculation time > 2 minutes.",
     )
     if run_matrix:
-        matrix_btn = st.sidebar.button("▶  Run PVGIS Matrix", type="secondary", use_container_width=True)
+        matrix_btn = st.sidebar.button("▶  Run PVGIS Matrix", type="secondary", width='stretch')
     else:
         matrix_btn = False
 
@@ -351,13 +351,23 @@ if 'pvgis_df_pv_monthly_dict' in st.session_state:
     bullet_points_dict      = st.session_state['pvgis_bullet_points_dict']
     _p                      = st.session_state['pvgis_params']
 
+    # Invalidate cache if EPW list changed (e.g. user added/removed files after fetch)
+    current_epw_names = {loc['epw_name'] for loc in locations}
+    cached_keys = set(df_pv_monthly_dict.keys())
+    if not current_epw_names.issubset(cached_keys):
+        for k in ['pvgis_hourly_data_dict', 'pvgis_pv_production_data_dict', 'pvgis_df_hourly_dict',
+                  'pvgis_df_pv_monthly_dict', 'pvgis_df_pv_totals_dict', 'pvgis_bullet_points_dict', 'pvgis_params']:
+            st.session_state.pop(k, None)
+        st.session_state['pvgis_cache_invalidated'] = True
+        st.rerun()
+
     tabs = st.tabs(["📊 Charts", "📈 Monthly + SD", "📋 Tables", "📄 Raw Output"])
 
     # ── Tab 1: original subplots chart ───────────────────────────────────
     with tabs[0]:
         st.markdown('##### PVGIS Data Visualization — Charts')
         chart_cols = st.columns(len(locations))
-        for col, loc in zip(chart_cols, locations):
+        for i, (col, loc) in enumerate(zip(chart_cols, locations)):
             epw_name = loc['epw_name']
             epw_file = loc['epw_file']
             with col:
@@ -373,7 +383,7 @@ if 'pvgis_df_pv_monthly_dict' in st.session_state:
                     0, 265, 0, 265,
                     margin=dict(l=20, r=20, t=60, b=20),
                 )
-                st.plotly_chart(fig_plotly, use_container_width=True)
+                st.plotly_chart(fig_plotly, width='stretch', key=f"pvgis_chart_{i}")
 
     # ── Tab 2: Monthly energy + SD bands ─────────────────────────────────
     with tabs[1]:
@@ -384,7 +394,7 @@ if 'pvgis_df_pv_monthly_dict' in st.session_state:
             "Dotted line = monthly POA irradiance (right axis)."
         )
         chart_cols = st.columns(len(locations))
-        for col, loc in zip(chart_cols, locations):
+        for i, (col, loc) in enumerate(zip(chart_cols, locations)):
             epw_name = loc['epw_name']
             epw_file = loc['epw_file']
             with col:
@@ -392,7 +402,7 @@ if 'pvgis_df_pv_monthly_dict' in st.session_state:
                 if not df_monthly.empty:
                     city = epw_file._location.city if epw_file else loc['label']
                     fig_sd = _plot_monthly_sd_chart(df_monthly, city)
-                    st.plotly_chart(fig_sd, use_container_width=True)
+                    st.plotly_chart(fig_sd, width='stretch', key=f"pvgis_sd_{i}")
                 else:
                     st.info("No monthly data available for this location.")
 
@@ -411,7 +421,7 @@ if 'pvgis_df_pv_monthly_dict' in st.session_state:
 
                     if not df_daily.empty:
                         st.write(f"**Daily averages** ({city})")
-                        st.dataframe(df_daily.round(2), use_container_width=True, height=120)
+                        st.dataframe(df_daily.round(2), width='stretch', height=120)
                         for bullet in extract_meta_variable_info_by_type(
                             pv_production_data_dict.get(epw_name) or {}, daily_only=True
                         ):
@@ -422,7 +432,7 @@ if 'pvgis_df_pv_monthly_dict' in st.session_state:
 
                     if not df_monthly_vars.empty:
                         st.write(f"**Monthly data** ({city})")
-                        st.dataframe(df_monthly_vars.round(2), use_container_width=True, height=180)
+                        st.dataframe(df_monthly_vars.round(2), width='stretch', height=180)
                         for bullet in extract_meta_variable_info_by_type(
                             pv_production_data_dict.get(epw_name) or {}, daily_only=False
                         ):
@@ -437,6 +447,8 @@ if 'pvgis_df_pv_monthly_dict' in st.session_state:
     # ── Tab 4: Raw JSON ───────────────────────────────────────────────────
     with tabs[3]:
         st.markdown('##### PVGIS Data — Raw Output')
+        if all(hourly_data_dict.get(k) is None for k in hourly_data_dict):
+            st.caption("Hourly time series (seriescalc) is currently unavailable. Monthly data above comes from PVcalc.")
         chart_cols = st.columns(len(locations))
         for col, loc in zip(chart_cols, locations):
             epw_name = loc['epw_name']
@@ -448,6 +460,8 @@ if 'pvgis_df_pv_monthly_dict' in st.session_state:
 
 else:
     # ── Empty state ───────────────────────────────────────────────────────
+    if st.session_state.pop('pvgis_cache_invalidated', False):
+        st.warning("EPW list changed — PVGIS cache cleared. Click **Fetch PVGIS Data** to reload.")
     _, mid, _ = st.columns([1, 2, 1])
     with mid:
         st.markdown(
@@ -520,7 +534,7 @@ if matrix_btn:
                         st.markdown(f'##### {oc} — {var_metric}')
                         energy_matrix = energy_matrix.applymap(lambda x: f"{x:.0f}")
                         styled = absrd_style_df_streamlit(df=energy_matrix, range_min_max=rng, colormap=cmap)
-                        st.dataframe(styled, use_container_width=True)
+                        st.dataframe(styled, width='stretch')
 
                     custom_divider(spacing_above_px=15, spacing_below_px=5)
 

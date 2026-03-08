@@ -111,16 +111,16 @@ def load_google_fonts(font_name: str):
 
 
 
-# Dictionary mapping short codes to full region names
+# Dictionary mapping short codes to full region names (HASC/statoids)
 ITA_regions_dict = {
     "AB": "Abruzzo",
     "BC": "Basilicata",
     "CM": "Campania",
     "ER": "Emilia-Romagna",
     "FV": "Friuli-Venezia Giulia",
-    "LB": "Lombardia",
+    "LB": "Calabria",
     "LG": "Liguria",
-    "LM": "Lazio",
+    "LM": "Lombardia",
     "LZ": "Lazio",
     "MH": "Marche",
     "ML": "Molise",
@@ -132,7 +132,7 @@ ITA_regions_dict = {
     "TT": "Trentino-Alto Adige",
     "UM": "Umbria",
     "VD": "Valle d'Aosta",
-    "VN": "Veneto"
+    "VN": "Veneto",
 }
 
 # Create a reverse mapping for easy lookup
@@ -360,28 +360,24 @@ with tabs[1]:
                             option_labels.append(label)
                             label_to_entry[label] = e
 
-                        selected_labels = st.multiselect(
-                            "Select dataset(s) to add:",
+                        selected_label = st.radio(
+                            "Select a dataset to add:",
                             options=option_labels,
-                            default=[option_labels[0]] if option_labels else [],
+                            index=0 if option_labels else None,
+                            key="archive_dataset_radio",
                         )
 
-                        if st.button("Add selected dataset(s) to the list"):
-                            for lab in selected_labels:
-                                entry = label_to_entry[lab]
-                                epw_file_path = pathlib.Path(entry.epw_path)
+                        if st.button("Add selected dataset to the list") and selected_label:
+                            entry = label_to_entry[selected_label]
+                            epw_file_path = pathlib.Path(entry.epw_path)
 
-                                # avoid duplicates in analysis list (path-based, safest)
-                                already = any(x["epw_file_path"] == epw_file_path for x in st.session_state["epw_files_list"])
-                                if already:
-                                    continue
-
+                            already = any(x["epw_file_path"] == epw_file_path for x in st.session_state["epw_files_list"])
+                            if not already:
                                 epw_obj = get_epw_from_url_or_path(epw_file_path, url=None)  # local only
                                 if epw_obj:
                                     st.session_state['archive_files'].append(entry.file_name)
                                     st.session_state['epw_names'].append(epw_obj)
                                     add_to_epw_files_list(entry.file_name, epw_obj, epw_file_path)
-
                             st.rerun()
 
 

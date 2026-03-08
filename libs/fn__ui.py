@@ -361,7 +361,7 @@ def f211__epw_location_map(
             initial_view_state=view_state,
             map_style="mapbox://styles/mapbox/light-v9",
         ),
-        use_container_width=False,
+        width='content',
         height=chart_height,
     )
 

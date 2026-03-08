@@ -421,7 +421,6 @@ def f114__convert_outputs_to_dataframe(outputs: dict) -> pd.DataFrame:
     try:
         hourly_data = outputs.get("hourly", [])
         if not isinstance(hourly_data, list) or len(hourly_data) == 0:
-            st.error("No hourly data found in the 'outputs' section.")
             return pd.DataFrame()
 
         df = pd.DataFrame(hourly_data)
@@ -452,12 +451,13 @@ def f115__fetch_pvgis_hourly_data(
         response = requests.get(api_url, params=params)
         response.raise_for_status()
         return response.json()
-    except requests.exceptions.HTTPError as e:
-        st.error(f"HTTP error: {e}")
-    except requests.exceptions.RequestException as e:
-        st.error(f"Request error: {e}")
-    except json.JSONDecodeError as e:
-        st.error(f"JSON decode error: {e}")
+    except requests.exceptions.HTTPError:
+        # seriescalc may return 400; monthly data from PVcalc still works
+        pass
+    except requests.exceptions.RequestException:
+        pass
+    except json.JSONDecodeError:
+        pass
     return None
 
 

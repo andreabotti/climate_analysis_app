@@ -210,7 +210,7 @@ with st.sidebar:
     run_btn = st.button(
         "▶  Run PVWatts",
         type="primary",
-        use_container_width=True,
+        width='stretch',
         disabled=not api_key,
     )
 
@@ -418,7 +418,7 @@ def _render(r: PVWattsResult) -> None:
                     paper_bgcolor="white",
                     font=dict(family="Source Serif Pro, Georgia, serif", size=12),
                 )
-                st.plotly_chart(fig, use_container_width=True)
+                st.plotly_chart(fig, width='stretch')
 
             with tab_table:
                 st.dataframe(
@@ -428,7 +428,7 @@ def _render(r: PVWattsResult) -> None:
                         "POA Irradiance (kWh/m²)": "{:,.0f}",
                         "Avg Daily Irr (kWh/m²/d)": "{:.2f}",
                     }),
-                    use_container_width=True,
+                    width='stretch',
                     hide_index=True,
                 )
 
@@ -461,7 +461,7 @@ def _render(r: PVWattsResult) -> None:
                     labels={"Hour": "Hour of Year"},
                 )
                 fig_h.update_layout(margin=BOX_CHART_MARGINS, height=320, plot_bgcolor="white", paper_bgcolor="white")
-                st.plotly_chart(fig_h, use_container_width=True)
+                st.plotly_chart(fig_h, width='stretch')
 
             with ht2:
                 fig_tw = go.Figure()
@@ -478,7 +478,7 @@ def _render(r: PVWattsResult) -> None:
                     margin=BOX_CHART_MARGINS, height=320,
                     plot_bgcolor="white", paper_bgcolor="white",
                 )
-                st.plotly_chart(fig_tw, use_container_width=True)
+                st.plotly_chart(fig_tw, width='stretch')
 
             with ht3:
                 st.download_button(

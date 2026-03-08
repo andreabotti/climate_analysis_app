@@ -264,7 +264,7 @@ with tabs[0]:
                     )
 
                     # Render the chart
-                    st.plotly_chart(fig_line, use_container_width=True, key=f"line_{epw_name}")
+                    st.plotly_chart(fig_line, width='stretch', key=f"line_{epw_name}")
 
         elif chart_mode == "Combined":
 
@@ -319,7 +319,7 @@ with tabs[0]:
             )
 
             # Render the chart
-            st.plotly_chart(fig_combined, use_container_width=True, key="combined_line")
+            st.plotly_chart(fig_combined, width='stretch', key="combined_line")
 
 
 
@@ -575,7 +575,7 @@ with tabs[4]:
                 'with epw data', global_colorset, epw=epw_col, switch=None, data=data_col
             )
             
-            st.plotly_chart(sunpath_figure, use_container_width=True,
+            st.plotly_chart(sunpath_figure, width='stretch',
                             config=get_figure_config(f'Sunpath_{epw_name}'),
                             key=f"sunpath_{epw_name}")
 
@@ -632,4 +632,4 @@ with tabs[5]:
                 unit='m/s',
                 color_map=rgba_colors,
             )
-            st.plotly_chart(fig, use_container_width=True, key=f"windrose_{epw_name}")
+            st.plotly_chart(fig, width='stretch', key=f"windrose_{epw_name}")

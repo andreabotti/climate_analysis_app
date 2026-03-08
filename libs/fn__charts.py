@@ -664,7 +664,7 @@ def f324__plot_pv_monthly_comparison_subplots(
 
         fig.update_layout(showlegend=False, height=450, width=1000,
                           margin=margin or dict(l=40, r=40, t=40, b=40))
-        fig.update_annotations(font=dict(size=18, color="black"))
+        fig.update_annotations(font=dict(size=13, color="#333", family="Source Serif Pro, Georgia, serif"))
         fig.update_yaxes(title_text="kWh",    range=[range_min_em,  range_max_em],  row=1, col=2)
         fig.update_yaxes(title_text="kWh/m²", range=[range_min_him, range_max_him], row=1, col=1)
         fig.update_xaxes(title_text="Month", row=1, col=1)
