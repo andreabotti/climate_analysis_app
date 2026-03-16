@@ -1,5 +1,9 @@
 import streamlit as st
 import numpy as np
+import warnings
+
+# Suppress FutureWarnings from ladybug_charts ('H' deprecated → use 'h')
+warnings.filterwarnings("ignore", category=FutureWarning, module="ladybug_charts")
 
 # NumPy 2.0 compatibility: ladybug_pandas still uses deprecated np.float_
 if not hasattr(np, "float_"):

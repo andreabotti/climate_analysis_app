@@ -106,7 +106,7 @@ def f301__avg_daily_profile(
     range_y  = [5 * floor(plot_data.min / 5), 5 * ceil(plot_data.max / 5)]
 
     df = pd.DataFrame(plot_data.values, columns=["value"])
-    df["datetime"] = pd.date_range(start="2023-01-01 00:00", periods=len(df), freq="H")
+    df["datetime"] = pd.date_range(start="2023-01-01 00:00", periods=len(df), freq="h")
     df["month"]    = df["datetime"].dt.month
     df["hour"]     = df["datetime"].dt.hour
     df = _slice_df(df, plot_analysis_period)
@@ -226,7 +226,7 @@ def f305__slice_data_by_month(
 ) -> pd.DataFrame:
     """Return a DataFrame of hourly values filtered to *start_month*–*end_month*."""
     df = pd.DataFrame(plot_data.values, columns=["value"])
-    df["datetime"] = pd.date_range(start="2023-01-01 00:00", periods=len(df), freq="H")
+    df["datetime"] = pd.date_range(start="2023-01-01 00:00", periods=len(df), freq="h")
     df["month"]    = df["datetime"].dt.month
     return df[(df["month"] >= start_month) & (df["month"] <= end_month)]
 
@@ -578,7 +578,7 @@ def f322__plot_windrose(
     color_lookup = {label: _rgb_hex(color_map[int(x * (len(color_map) - 1))][:3])
                     for label, x in zip(speed_labels, norm)}
 
-    grouped = (df.groupby(["dir_bin", "speed_bin"]).size()
+    grouped = (df.groupby(["dir_bin", "speed_bin"], observed=False).size()
                .reset_index(name="count"))
     grouped["frequency"] = 100 * grouped["count"] / grouped["count"].sum()
 
